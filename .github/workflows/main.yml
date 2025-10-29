@@ -3,36 +3,73 @@ name: Fetch MEXC Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'  # alle 6 Stunden automatisch
+    - cron: '0 */6 * * *'   # alle 6 Stunden
+
+permissions:
+  contents: write           # erlaubt Commit/Push auf main
 
 jobs:
-  build:
+  fetch-and-publish:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Ensure output dir exists
+        run: |
+          mkdir -p docs/data
+
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install ccxt pandas
 
-      - name: Run report script
+      - name: Run report.py (fetch from MEXC)
         env:
           MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
           MEXC_API_SECRET: ${{ secrets.MEXC_API_SECRET }}
         run: |
-          python report.py
+          set -e
+          echo "=== Python version ==="
+          python -V
+          echo "=== Running report.py ==="
+          python report.py || echo "::warning::report.py returned non-zero exit code"
+          echo "=== After report.py, listing docs/data ==="
+          ls -lah docs/data || true
 
-      - name: Commit and push JSON
+      # Fallback: wenn report.py nichts geschrieben hat, befüllen wir eine Dummy-Datei,
+      # damit das Frontend sofort etwas anzeigt und wir sehen, dass das Lesen klappt.
+      - name: Write dummy JSON if missing
+        run: |
+          if [ ! -f docs/data/latest.json ]; then
+            echo "No docs/data/latest.json found. Writing dummy file..."
+            cat > docs/data/latest.json <<'JSON'
+            {
+              "updated_at": "fallback",
+              "equity_usdt": 0,
+              "equity_eur": 0,
+              "pnl_daily": [],
+              "pnl_cum": [],
+              "copytrades": [],
+              "notes": "Dummy file written by workflow because report.py did not produce output."
+            }
+            JSON
+          fi
+          echo "=== Final docs/data content ==="
+          ls -lah docs/data
+          echo "=== Preview JSON ==="
+          head -n 50 docs/data/latest.json || true
+
+      - name: Commit & push changes
         run: |
           git config user.name "github-actions"
           git config user.email "actions@users.noreply.github.com"
-          git add docs/data/latest.json || true
-          git commit -m "Update report data" || echo "No changes"
+          git add docs/data/latest.json
+          git commit -m "Update data (auto)" || echo "No changes to commit"
           git push
