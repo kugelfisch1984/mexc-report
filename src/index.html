@@ -1,151 +1,231 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MEXC Dashboard (geschützt)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MEXC Report</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root { color-scheme: dark; }
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:#0f1420;color:#e8eefc}
-    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
-    .card{width:min(720px,92vw);background:#161c2c;border:1px solid #28324a;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:22px}
-    h1{margin:.2em 0 0.3em;font-weight:700}
-    .muted{opacity:.7;margin:.2em 0 1em}
-    input,select,button{width:100%;padding:12px 14px;margin:.4em 0;border-radius:12px;border:1px solid #2a3655;background:#0f1420;color:#e8eefc}
-    button{background:#3b82f6;border-color:#3b82f6;cursor:pointer;font-weight:700}
-    button:hover{filter:brightness(1.1)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .error{color:#ff7b7b;margin:.6em 0 0}
-    .hide{display:none}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .selects{display:flex;gap:8px;flex-wrap:wrap}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
-    .kpi{padding:12px;border:1px solid #28324a;border-radius:12px;background:#0f1420}
-    .k{font-size:.9rem;opacity:.8}
-    .v{font-size:1.3rem;font-weight:700}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #28324a;padding:8px;text-align:left}
-    th{opacity:.8}
-    @media (max-width:760px){
-      .grid{grid-template-columns:1fr 1fr}
-      .grid2{grid-template-columns:1fr}
-      header{flex-direction:column;align-items:flex-start}
+    :root{
+      --bg:#0f172a; --panel:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b;
+      --radius:14px;
     }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1100px;margin:40px auto;padding:0 16px}
+    .card{background:var(--panel);border-radius:var(--radius);padding:16px}
+    .row{display:grid;gap:12px}
+    .row.cols-4{grid-template-columns: repeat(4, minmax(0,1fr));}
+    .row.cols-2{grid-template-columns: repeat(2, minmax(0,1fr));}
+    h1{margin:0 0 16px;font-size:28px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+    select,input{background:#0b1220;color:var(--text);border:1px solid #22304a;border-radius:10px;padding:8px 10px;width:100%}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+    .kpi{background:#0b1220;border:1px solid #22304a;border-radius:12px;padding:14px}
+    .kpi .name{color:var(--muted);font-size:12px}
+    .kpi .val{font-size:20px;margin-top:6px}
+    .kpi .ok{color:var(--ok)} .kpi .bad{color:#ef4444}
+    .panel-title{font-weight:600;margin-bottom:10px}
+    canvas{background:#0b1220;border:1px solid #22304a;border-radius:12px;padding:10px}
+    table{width:100%;border-collapse:collapse;background:#0b1220;border:1px solid #22304a;border-radius:12px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid #22304a;font-size:14px}
+    th{color:var(--muted);text-align:left}
+    .muted{color:var(--muted)}
+    .note{margin-top:10px;color:var(--muted);font-size:13px}
+    @media (max-width:900px){ .row.cols-4,.kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+    @media (max-width:600px){ .row.cols-4,.kpis{grid-template-columns:1fr;} .row.cols-2{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
-<div class="wrap">
+  <div class="wrap">
+    <h1>MEXC Report</h1>
 
-  <!-- LOGIN-KARTE -->
-  <div id="gate" class="card">
-    <h1>Login</h1>
-    <p class="muted">Bitte Benutzername und Passwort eingeben.</p>
-    <div class="row">
-      <input id="user" placeholder="Benutzername" autocomplete="username">
-      <input id="pass" type="password" placeholder="Passwort" autocomplete="current-password">
-    </div>
-    <button id="go">Anmelden</button>
-    <p id="msg" class="error hide">Login falsch.</p>
-  </div>
-
-  <!-- APP-KARTE (wird nach Login angezeigt) -->
-  <div id="app" class="card hide">
-    <header>
-      <h1>MEXC Report</h1>
-      <div class="selects">
-        <label>Währung
-          <select id="ccy">
-            <option value="USDT">USDT</option>
-            <option value="EUR">EUR</option>
-          </select>
-        </label>
-        <label>Zeitraum
-          <select id="range">
-            <option value="7">7 Tage</option>
-            <option value="14">14 Tage</option>
-            <option value="30" selected>30 Tage</option>
-            <option value="90">90 Tage</option>
-          </select>
-        </label>
+    <!-- Filter / Einstellungen -->
+    <div class="row cols-4">
+      <div class="card">
+        <label>Währung</label>
+        <select id="currency">
+          <option value="USDT">USDT</option>
+          <option value="EUR">EUR</option>
+        </select>
       </div>
-    </header>
+      <div class="card">
+        <label>Zeitraum</label>
+        <select id="range">
+          <option value="7">7 Tage</option>
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
+          <option value="365">365 Tage</option>
+          <option value="all">Alles</option>
+        </select>
+      </div>
+      <div class="card">
+        <label>EUR pro USDT (Fixkurs)</label>
+        <input id="eurRate" type="number" step="0.0001" value="0.92" />
+        <div class="note">Passe das an, falls du einen anderen Kurs möchtest.</div>
+      </div>
+      <div class="card">
+        <label>Letztes Update</label>
+        <div id="updated" class="muted">—</div>
+      </div>
+    </div>
 
-    <section id="stats" class="grid">
-      <div class="kpi"><div class="k">Equity</div><div id="k_equity" class="v">–</div></div>
-      <div class="kpi"><div class="k">PnL (∑)</div><div id="k_pnl" class="v">–</div></div>
-      <div class="kpi"><div class="k">ROI</div><div id="k_roi" class="v">–</div></div>
-      <div class="kpi"><div class="k">Copy-Trades</div><div id="k_copies" class="v">–</div></div>
-    </section>
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="name">Equity</div>
+        <div id="kpiEquity" class="val">—</div>
+      </div>
+      <div class="kpi">
+        <div class="name">PnL (Summe)</div>
+        <div id="kpiPnL" class="val">—</div>
+      </div>
+      <div class="kpi">
+        <div class="name">ROI</div>
+        <div id="kpiROI" class="val">—</div>
+      </div>
+      <div class="kpi">
+        <div class="name"># Copy-Trades</div>
+        <div id="kpiCopy" class="val">—</div>
+      </div>
+    </div>
 
-    <section class="grid2">
-      <canvas id="equityChart" height="200"></canvas>
-      <canvas id="pnlChart" height="200"></canvas>
-    </section>
+    <!-- Charts -->
+    <div class="row cols-2" style="margin-top:14px">
+      <div class="card">
+        <div class="panel-title">Täglicher PnL</div>
+        <canvas id="pnlChart" height="140"></canvas>
+      </div>
+      <div class="card">
+        <div class="panel-title">PnL kumuliert</div>
+        <canvas id="cumChart" height="140"></canvas>
+      </div>
+    </div>
 
-    <section>
-      <h2>Copytrades</h2>
-      <table id="tbl">
-        <thead><tr>
-          <th>Datum</th><th>Symbol</th><th>Side</th><th>Menge</th>
-          <th>Preis</th><th>Gebühr</th><th>PnL</th><th>ROI</th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-    </section>
+    <!-- Copytrades -->
+    <div class="card" style="margin-top:14px">
+      <div class="panel-title">Copytrades</div>
+      <div class="muted" id="copyInfo" style="margin-bottom:8px">—</div>
+      <div style="overflow:auto">
+        <table id="copyTable">
+          <thead>
+          <tr>
+            <th>Datum</th><th>Symbol</th><th>Side</th><th>Menge</th><th>Preis</th><th>Gebühr</th><th>PnL</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note">Datenquelle: <code>./data/latest.json</code> (wird per GitHub Action erzeugt).</div>
+    </div>
   </div>
 
-</div>
+  <script>
+    // ---------- UI ----------
+    const el = (id) => document.getElementById(id);
+    const fmt = (x,cur) => (cur === 'EUR')
+        ? new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR'}).format(x)
+        : new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'}).format(x);
 
-<script>
-  // --- Feste Zugangsdaten (Case-sensitive) ---
-  const USER = 'Kevin';
-  const PASS = 'Gelsenkirchen21*';
+    const state = { data:null, charts:{}, cur:'USDT', days:7, eurRate:0.92 };
 
-  // Elemente
-  const gate = document.getElementById('gate');
-  const app  = document.getElementById('app');
-  const uEl  = document.getElementById('user');
-  const pEl  = document.getElementById('pass');
-  const go   = document.getElementById('go');
-  const msg  = document.getElementById('msg');
+    el('currency').addEventListener('change', () => { state.cur = el('currency').value; render(); });
+    el('range').addEventListener('change', () => { state.days = el('range').value === 'all' ? 'all' : parseInt(el('range').value,10); render(); });
+    el('eurRate').addEventListener('input', () => { state.eurRate = parseFloat(el('eurRate').value || '0.92'); render(); });
 
-  function show(el){ el.classList.remove('hide'); }
-  function hide(el){ el.classList.add('hide'); }
+    // ---------- Daten laden (Punkt 4) ----------
+    async function loadData(){
+      try{
+        const r = await fetch('./data/latest.json', {cache:'no-store'});
+        if(!r.ok) throw new Error('Kein latest.json gefunden');
+        state.data = await r.json();
+      }catch(e){
+        console.error(e);
+        state.data = null;
+      }
+      render();
+    }
 
-  function loginOK(){
-    localStorage.setItem('auth_ok','1');
-    hide(gate); show(app);
-    msg.classList.add('hide');
-    // hier später: Laden der Daten starten
-  }
+    // ---------- Render ----------
+    function toDisplay(val){
+      if(state.cur === 'EUR') return val * state.eurRate;
+      return val; // USDT ~ USD
+    }
 
-  function loginFail(){
-    msg.textContent = 'Login falsch.';
-    msg.classList.remove('hide');
-  }
+    function render(){
+      // Reset bei fehlenden Daten
+      if(!state.data){
+        el('updated').textContent = 'Keine Daten gefunden (läuft die GitHub Action?)';
+        ['kpiEquity','kpiPnL','kpiROI','kpiCopy'].forEach(id=> el(id).textContent='—');
+        drawCharts([], [], []);
+        el('copyInfo').textContent = '—';
+        el('copyTable').querySelector('tbody').innerHTML = '';
+        return;
+      }
 
-  function tryLogin(){
-    const u = (uEl.value || '').trim();
-    const p = (pEl.value || ''); // Passwort NICHT trimmen
-    if (u === USER && p === PASS) loginOK(); else loginFail();
-  }
+      const d = state.data;
+      el('updated').textContent = new Date(d.generated_at*1000).toLocaleString('de-DE', {timeZone:'UTC'}) + ' UTC';
 
-  // Button + Enter
-  go.addEventListener('click', tryLogin);
-  [uEl, pEl].forEach(el => el.addEventListener('keydown', e => {
-    if (e.key === 'Enter') tryLogin();
-  }));
+      // Zeitraum filtern
+      let rows = (d.pnl_daily || []).slice().sort((a,b)=> a.date.localeCompare(b.date));
+      if(state.days !== 'all'){
+        const cutoff = new Date(); cutoff.setUTCDate(cutoff.getUTCDate() - state.days);
+        rows = rows.filter(r => new Date(r.date) >= cutoff);
+      }
 
-  // Bereits eingeloggt?
-  if (localStorage.getItem('auth_ok') === '1') {
-    hide(gate); show(app);
-  } else {
-    show(gate); hide(app);
-  }
+      // KPIs
+      const sumPnL = rows.reduce((s,r)=> s + (Number(r.pnl_usdt)||0), 0);
+      const roi = d.roi || (d.equity_usdt>0 ? sumPnL/d.equity_usdt : 0);
+      el('kpiEquity').textContent = fmt(toDisplay(Number(d.equity_usdt)||0), state.cur);
+      el('kpiPnL').innerHTML = `<span class="${sumPnL>=0?'ok':'bad'}">${fmt(toDisplay(sumPnL), state.cur)}</span>`;
+      el('kpiROI').innerHTML = `<span class="${roi>=0?'ok':'bad'}">${(roi*100).toFixed(2)}%</span>`;
+      el('kpiCopy').textContent = (d.copytrades||[]).length.toString();
 
-  // Optional: Logout im Dev-Tool testen
-  // localStorage.removeItem('auth_ok');
-</script>
+      // Charts
+      const labels = rows.map(r=> r.date);
+      const pnlVals = rows.map(r=> toDisplay(Number(r.pnl_usdt)||0));
+      const cumVals = pnlVals.reduce((acc,v)=> { acc.push((acc.at(-1)||0)+v); return acc; }, []);
+      drawCharts(labels, pnlVals, cumVals);
+
+      // Copytrades Tabelle (ein paar Felder)
+      const ct = (d.copytrades||[]).slice().sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+      el('copyInfo').textContent = `${ct.length} Einträge`;
+      const tbody = el('copyTable').querySelector('tbody');
+      tbody.innerHTML = ct.map(x=>{
+        const price = Number(x.price)||0;
+        const fee = Number(x.fee)||0;
+        const pnl = Number(x.pnl_usdt)||0;
+        return `<tr>
+          <td>${(x.date||'').replace('T',' ').replace('Z','')}</td>
+          <td>${x.symbol||''}</td>
+          <td>${(x.side||'').toUpperCase()}</td>
+          <td>${Number(x.amount||0)}</td>
+          <td>${fmt(price, 'USDT')}</td>
+          <td>${fmt(toDisplay(fee), state.cur)}</td>
+          <td class="${pnl>=0?'ok':'bad'}">${fmt(toDisplay(pnl), state.cur)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function drawCharts(labels, pnl, cum){
+      // PnL daily
+      if(state.charts.pnl) state.charts.pnl.destroy();
+      state.charts.pnl = new Chart(document.getElementById('pnlChart'), {
+        type: 'bar',
+        data: { labels, datasets: [{ label:'PnL', data:pnl }] },
+        options: { responsive:true, plugins:{legend:{display:false}} }
+      });
+      // PnL cumulative
+      if(state.charts.cum) state.charts.cum.destroy();
+      state.charts.cum = new Chart(document.getElementById('cumChart'), {
+        type: 'line',
+        data: { labels, datasets: [{ label:'Kumuliert', data:cum, tension:0.2 }] },
+        options: { responsive:true, plugins:{legend:{display:false}} }
+      });
+    }
+
+    // Start
+    loadData();
+  </script>
 </body>
 </html>
