@@ -1,30 +1,66 @@
 <!doctype html>
 <html lang="de">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MEXC Dashboard (geschützt)</title>
-<link rel="stylesheet" href="style.css">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MEXC Dashboard (geschützt)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:#0f1420;color:#e8eefc}
+    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
+    .card{width:min(720px,92vw);background:#161c2c;border:1px solid #28324a;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:22px}
+    h1{margin:.2em 0 0.3em;font-weight:700}
+    .muted{opacity:.7;margin:.2em 0 1em}
+    input,select,button{width:100%;padding:12px 14px;margin:.4em 0;border-radius:12px;border:1px solid #2a3655;background:#0f1420;color:#e8eefc}
+    button{background:#3b82f6;border-color:#3b82f6;cursor:pointer;font-weight:700}
+    button:hover{filter:brightness(1.1)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .error{color:#ff7b7b;margin:.6em 0 0}
+    .hide{display:none}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .selects{display:flex;gap:8px;flex-wrap:wrap}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+    .kpi{padding:12px;border:1px solid #28324a;border-radius:12px;background:#0f1420}
+    .k{font-size:.9rem;opacity:.8}
+    .v{font-size:1.3rem;font-weight:700}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border-bottom:1px solid #28324a;padding:8px;text-align:left}
+    th{opacity:.8}
+    @media (max-width:760px){
+      .grid{grid-template-columns:1fr 1fr}
+      .grid2{grid-template-columns:1fr}
+      header{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
 <body>
+<div class="wrap">
+
+  <!-- LOGIN-KARTE -->
   <div id="gate" class="card">
     <h1>Login</h1>
     <p class="muted">Bitte Benutzername und Passwort eingeben.</p>
-    <input id="user" placeholder="Benutzername" autocomplete="username">
-    <input id="pass" type="password" placeholder="Passwort" autocomplete="current-password">
+    <div class="row">
+      <input id="user" placeholder="Benutzername" autocomplete="username">
+      <input id="pass" type="password" placeholder="Passwort" autocomplete="current-password">
+    </div>
     <button id="go">Anmelden</button>
-    <p id="msg" class="error" hidden>Login falsch.</p>
+    <p id="msg" class="error hide">Login falsch.</p>
   </div>
 
-  <div id="app" class="hide">
+  <!-- APP-KARTE (wird nach Login angezeigt) -->
+  <div id="app" class="card hide">
     <header>
       <h1>MEXC Report</h1>
       <div class="selects">
-        <label>Währung:
+        <label>Währung
           <select id="ccy">
             <option value="USDT">USDT</option>
             <option value="EUR">EUR</option>
           </select>
         </label>
-        <label>Zeitraum:
+        <label>Zeitraum
           <select id="range">
             <option value="7">7 Tage</option>
             <option value="14">14 Tage</option>
@@ -49,42 +85,67 @@
 
     <section>
       <h2>Copytrades</h2>
-      <table id="tbl" class="table">
+      <table id="tbl">
         <thead><tr>
-          <th>Datum</th><th>Symbol</th><th>Side</th><th>Menge</th><th>Preis</th><th>Gebühr</th><th>PnL</th><th>ROI</th>
+          <th>Datum</th><th>Symbol</th><th>Side</th><th>Menge</th>
+          <th>Preis</th><th>Gebühr</th><th>PnL</th><th>ROI</th>
         </tr></thead>
         <tbody></tbody>
       </table>
     </section>
   </div>
 
- <script>
-  // IDs bitte an deine Felder anpassen (username/password/login-form/msg)
-  const FORM  = document.getElementById('login-form');
-  const U_IN  = document.getElementById('username');
-  const P_IN  = document.getElementById('password');
-  const MSG   = document.getElementById('msg');
+</div>
 
-  // Fixe, case-sensitive Credentials:
+<script>
+  // --- Feste Zugangsdaten (Case-sensitive) ---
   const USER = 'Kevin';
   const PASS = 'Gelsenkirchen21*';
 
-  function norm(s) { return (s || '').toString().trim(); }
+  // Elemente
+  const gate = document.getElementById('gate');
+  const app  = document.getElementById('app');
+  const uEl  = document.getElementById('user');
+  const pEl  = document.getElementById('pass');
+  const go   = document.getElementById('go');
+  const msg  = document.getElementById('msg');
 
-  FORM.addEventListener('submit', function (e) {
-    e.preventDefault();
-    const u = norm(U_IN.value);
-    const p = P_IN.value; // Passwort NICHT trimmen (Leerzeichen könnten absichtlich sein)
-    if (u === USER && p === PASS) {
-      // Login-Marker für Folgeseiten setzen
-      localStorage.setItem('auth_ok', '1');
-      // Weiter zur geschützten Seite (z. B. dashboard.html)
-      window.location.href = 'dashboard.html';
-    } else {
-      MSG.textContent = 'Login falsch.';
-    }
-  });
+  function show(el){ el.classList.remove('hide'); }
+  function hide(el){ el.classList.add('hide'); }
+
+  function loginOK(){
+    localStorage.setItem('auth_ok','1');
+    hide(gate); show(app);
+    msg.classList.add('hide');
+    // hier später: Laden der Daten starten
+  }
+
+  function loginFail(){
+    msg.textContent = 'Login falsch.';
+    msg.classList.remove('hide');
+  }
+
+  function tryLogin(){
+    const u = (uEl.value || '').trim();
+    const p = (pEl.value || ''); // Passwort NICHT trimmen
+    if (u === USER && p === PASS) loginOK(); else loginFail();
+  }
+
+  // Button + Enter
+  go.addEventListener('click', tryLogin);
+  [uEl, pEl].forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  }));
+
+  // Bereits eingeloggt?
+  if (localStorage.getItem('auth_ok') === '1') {
+    hide(gate); show(app);
+  } else {
+    show(gate); hide(app);
+  }
+
+  // Optional: Logout im Dev-Tool testen
+  // localStorage.removeItem('auth_ok');
 </script>
-
 </body>
 </html>
