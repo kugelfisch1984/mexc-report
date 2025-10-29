@@ -58,8 +58,33 @@
     </section>
   </div>
 
-  <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js"></script>
+ <script>
+  // IDs bitte an deine Felder anpassen (username/password/login-form/msg)
+  const FORM  = document.getElementById('login-form');
+  const U_IN  = document.getElementById('username');
+  const P_IN  = document.getElementById('password');
+  const MSG   = document.getElementById('msg');
+
+  // Fixe, case-sensitive Credentials:
+  const USER = 'Kevin';
+  const PASS = 'Gelsenkirchen21*';
+
+  function norm(s) { return (s || '').toString().trim(); }
+
+  FORM.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const u = norm(U_IN.value);
+    const p = P_IN.value; // Passwort NICHT trimmen (Leerzeichen könnten absichtlich sein)
+    if (u === USER && p === PASS) {
+      // Login-Marker für Folgeseiten setzen
+      localStorage.setItem('auth_ok', '1');
+      // Weiter zur geschützten Seite (z. B. dashboard.html)
+      window.location.href = 'dashboard.html';
+    } else {
+      MSG.textContent = 'Login falsch.';
+    }
+  });
+</script>
+
 </body>
 </html>
