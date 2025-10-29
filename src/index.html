@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEXC Dashboard (geschützt)</title>
+<link rel="stylesheet" href="style.css">
+<body>
+  <div id="gate" class="card">
+    <h1>Login</h1>
+    <p class="muted">Bitte Benutzername und Passwort eingeben.</p>
+    <input id="user" placeholder="Benutzername" autocomplete="username">
+    <input id="pass" type="password" placeholder="Passwort" autocomplete="current-password">
+    <button id="go">Anmelden</button>
+    <p id="msg" class="error" hidden>Login falsch.</p>
+  </div>
+
+  <div id="app" class="hide">
+    <header>
+      <h1>MEXC Report</h1>
+      <div class="selects">
+        <label>Währung:
+          <select id="ccy">
+            <option value="USDT">USDT</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </label>
+        <label>Zeitraum:
+          <select id="range">
+            <option value="7">7 Tage</option>
+            <option value="14">14 Tage</option>
+            <option value="30" selected>30 Tage</option>
+            <option value="90">90 Tage</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <section id="stats" class="grid">
+      <div class="kpi"><div class="k">Equity</div><div id="k_equity" class="v">–</div></div>
+      <div class="kpi"><div class="k">PnL (∑)</div><div id="k_pnl" class="v">–</div></div>
+      <div class="kpi"><div class="k">ROI</div><div id="k_roi" class="v">–</div></div>
+      <div class="kpi"><div class="k">Copy-Trades</div><div id="k_copies" class="v">–</div></div>
+    </section>
+
+    <section class="grid2">
+      <canvas id="equityChart" height="200"></canvas>
+      <canvas id="pnlChart" height="200"></canvas>
+    </section>
+
+    <section>
+      <h2>Copytrades</h2>
+      <table id="tbl" class="table">
+        <thead><tr>
+          <th>Datum</th><th>Symbol</th><th>Side</th><th>Menge</th><th>Preis</th><th>Gebühr</th><th>PnL</th><th>ROI</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
