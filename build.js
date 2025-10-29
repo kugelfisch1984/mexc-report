@@ -11,7 +11,6 @@ if (!pw) {
 // starker zufälliger Salt pro Build
 const salt = crypto.randomBytes(16).toString('hex');
 const hash = crypto.createHash('sha256').update(`${salt}:${pw}`).digest('hex');
-// pw ist "Kevin:Gelsenkirchen21*"
 
 
 const outDir = 'dist';
