@@ -83,15 +83,15 @@ for t in trades:
     })
 
 out = {
-    'generated_at': int(time.time()),
-    'currency': 'USDT',
-    'equity_usdt': usdt_total,
-    'equity_free_usdt': usdt_free,
-    'pnl_daily': pnl_daily.to_dict(orient='records'),
-    'roi': roi,
-    'copytrades': copytrades_tbl[:200]  # begrenzen
+    "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "equity_usdt": float(equity_usdt) if 'equity_usdt' in locals() else 0.0,
+    "equity_eur": float(equity_usdt)*0.92 if 'equity_usdt' in locals() else 0.0,  # Beispielkurs
+    "pnl_daily": pnl_daily if 'pnl_daily' in locals() else [],
+    "pnl_cum": pnl_cum if 'pnl_cum' in locals() else [],
+    "copytrades": copytrades if 'copytrades' in locals() else []
 }
 
-with open(f'{OUT}/latest.json','w',encoding='utf-8') as f:
+os.makedirs("docs/data", exist_ok=True)
+with open("docs/data/latest.json", "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False)
-print('wrote', f'{OUT}/latest.json')
+print("Wrote docs/data/latest.json")
