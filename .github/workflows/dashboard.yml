@@ -1,4 +1,4 @@
-name: Build MEXC Dashboard
+name: Build & Deploy Protected MEXC Dashboard
 
 on:
   schedule:
@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -22,19 +22,42 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install deps
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run dashboard
+      - name: Run dashboard generator (creates site/index.html)
         env:
           MEXC_KEY: ${{ secrets.MEXC_KEY }}
           MEXC_SECRET: ${{ secrets.MEXC_SECRET }}
         run: |
           python dashboard.py
+          test -f site/index.html
 
-      - name: Upload Pages Artifact
+      - name: Setup Node.js (staticrypt)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install staticrypt globally
+        run: npm install -g staticrypt@6.1.0
+
+      - name: Encrypt site/index.html with DASH_PW
+        env:
+          DASH_PW: ${{ secrets.DASH_PW }}
+        run: |
+          # Kill workflow if secret missing
+          if [ -z "$DASH_PW" ]; then echo "Missing DASH_PW secret"; exit 1; fi
+          # Backup original
+          cp site/index.html site/index.plain.html
+          # Use staticrypt to overwrite site/index.html with encrypted version
+          staticrypt site/index.plain.html "$DASH_PW" \
+            -o site/index.html \
+            -t "🔒 MEXC Dashboard — Login" \
+            -i "Bitte gib Benutzername:Passwort im Format Kevin:Gelsenkirchen21* ein."
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
@@ -42,10 +65,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
